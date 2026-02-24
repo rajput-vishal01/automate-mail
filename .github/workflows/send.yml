@@ -1,50 +1,78 @@
 name: Send Emails
 
 on:
-  workflow_dispatch: # Run manually from Actions tab
-  # schedule:          # OPTIONAL — enable for automatic runs
-  #   - cron: "0 4 * * *"   # Runs daily at 4 AM UTC
+  workflow_dispatch:
+    inputs:
+      run_reason:
+        description: "Reason for manual run (optional)"
+        required: false
+        default: "Manual trigger"
+
+  schedule:
+    # All times are UTC — convert to your timezone before editing
+    # Current schedule: placeholder (set your preferred time)
+    # Format: "minute hour * * day" — day 1=Mon, 5=Fri
+    # Examples:
+    #   "0 3 * * 1-5"  → Every weekday at 3:00 AM UTC
+    #   "0 3 * * 1"    → Every Monday at 3:00 AM UTC
+    #   "0 3 * * 3"    → Every Wednesday at 3:00 AM UTC
+    #   "0 3 * * 1,3,5"→ Mon, Wed, Fri at 3:00 AM UTC
+    - cron: "0 3 * * 1-5" # ← EDIT THIS LINE to change schedule
 
 permissions:
-  contents: write # REQUIRED to push updated CSV
+  contents: write
 
 jobs:
   send:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repo
+      - name: Skip if weekend (Saturday or Sunday)
+        id: day_check
+        run: |
+          DAY=$(date +%u)  # 1=Mon ... 6=Sat, 7=Sun
+          echo "Today is day $DAY"
+          if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
+            echo "It's the weekend. Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout repo
+        if: steps.day_check.outputs.skip == 'false'
         uses: actions/checkout@v4
 
-      # Setup Node.js
       - name: Setup Node
+        if: steps.day_check.outputs.skip == 'false'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # Install dependencies
       - name: Install dependencies
+        if: steps.day_check.outputs.skip == 'false'
         run: npm install
 
-      # Run email script
       - name: Run email script
+        if: steps.day_check.outputs.skip == 'false'
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
         run: node sendEmails.js
 
-      # Commit updated CSV back to repo
       - name: Commit updated CSV
+        if: steps.day_check.outputs.skip == 'false'
         run: |
           git config --global user.name "automation-bot"
           git config --global user.email "bot@users.noreply.github.com"
 
-          git add emails.csv || true
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git add emails.csv
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update email status"
+            git commit -m "chore: update email status [$(date '+%Y-%m-%d %H:%M UTC')]"
             git push
           fi
