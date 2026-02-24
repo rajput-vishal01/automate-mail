@@ -1,9 +1,2 @@
-Sr,Company / Org,Role Mentioned,Relevance for Developer,Email,Website,Notes,Status,Reason,Last Sent
-"1","TestCorp","Frontend Developer","Good fit for React skills","vishalrajput.7vr@gmail.com","https://example.com","Test entry","SENT","","2026-02-24T07:22:16.797Z"
-"2","DemoSoft","Backend Engineer","Node.js role","vishalrajput.13vr@gmail.com","https://example.com","Test entry","SENT","","2026-02-24T07:53:24.705Z"
-"3","SampleTech","Full Stack Developer","General dev role","vishalrajput.7ur@gmail.com","https://example.com","Test entry","SENT","","2026-02-24T07:25:25.618Z"
-"4","FakeCompany","Software Engineer","Invalid email test","invalid-email-address","https://example.com","Should fail","FAILED","No recipients defined","2026-02-24T07:26:57.071Z"
-"5","BrokenInc","Developer Role","Invalid domain test","user@@wrong..com","https://example.com","Should fail","FAILED","Can't send mail - all recipients were rejected: 553-5.1.3 The recipient address <user@@wrong..com> is not a valid RFC 5321
-553-5.1.3 address. For more information, go to
-553-5.1.3  https://support.google.com/a/answer/3221692 and review RFC 5321
-553 5.1.3 specifications. d9443c01a7336-2ad74f5d2c1sm90200365ad.20 - gsmtp","2026-02-24T07:28:29.357Z"
+Sr,Company / Org,Role Mentioned,Name,Email,Website,Personalization,Status,Reason,Last Sent
+1,Test Company,Test Role,Alok,vishalrajput.7vr@gmail.com,https://example.com,"Your work in IT and information solutions aligns well with my background in full-stack development, so I wanted to introduce my profile.",,,

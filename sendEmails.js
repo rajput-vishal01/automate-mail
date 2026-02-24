@@ -11,7 +11,7 @@ if (!EMAIL || !PASSWORD) {
 }
 
 const FILE = "emails.csv";
-const RESUME_PATH = "./resume.pdf";
+const RESUME_PATH = "./Vishal_Kumar_Resume.pdf";
 
 if (!fs.existsSync(FILE)) {
   throw new Error("emails.csv not found");
@@ -21,14 +21,8 @@ if (!fs.existsSync(RESUME_PATH)) {
   throw new Error("resume.pdf not found");
 }
 
-const DELAY_MS = 120 * 1000; // 2 min between emails
-const BATCH_SIZE = 40; // max ATTEMPTS per run
-
-// Behavior:
-// Sends 1 email → waits 2 minutes → sends next
-// Repeats until 40 emails are sent, then stops
-// Does NOT send 40 emails in 2 minutes
-// Choose values carefully to avoid SMTP/Gmail limits
+const DELAY_MS = 420 * 1000; // 7 minutes between emails
+const BATCH_SIZE = 20; // 20 per run × 2 runs = 40/day
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -37,28 +31,33 @@ const transporter = nodemailer.createTransport({
 
 const rows = [];
 
-async function sendMail(to, company) {
-  const subject = "Application for Software Developer Role";
+function buildEmail({ name, personalization }) {
+  return `Hi ${name},
 
-  const body = `
-Dear ${company} Team,
+${personalization}
 
-I hope you are doing well.
+I’m a final-year B.Tech (AI & Data Science) student seeking SDE / Backend / Full-Stack or Intern roles. I build production-ready apps using Next.js, Node.js, PostgreSQL, and Docker.
 
-I am applying for Software Developer opportunities at ${company}.
-Please find my resume attached.
+If there's a suitable opening, I'd be grateful to be considered. Resume attached.
+
+askvishal.in | github.com/rajput-vishal01 | linkedin.com/in/askvishal01
 
 Best regards,
-Your Name
-Phone: XXXXXXXX
-  `;
+Vishal Kumar
+askvishal.me@gmail.com`;
+}
+
+async function sendMail(to, name, personalization) {
+  const subject = `SDE / Backend Candidate — Vishal Rajput`;
+
+  const body = buildEmail({ name, personalization });
 
   await transporter.sendMail({
     from: EMAIL,
     to,
     subject,
     text: body,
-    attachments: [{ filename: "Resume.pdf", path: RESUME_PATH }],
+    attachments: [{ filename: "Vishal_Kumar_Resume.pdf", path: RESUME_PATH }],
   });
 }
 
@@ -74,7 +73,7 @@ function saveProgress(rows) {
     )
     .join("\n");
 
-  fs.writeFileSync(FILE, headers + "\n" + data); // overwrite same file
+  fs.writeFileSync(FILE, headers + "\n" + data);
 }
 
 // Read CSV
@@ -82,7 +81,7 @@ fs.createReadStream(FILE)
   .pipe(csv())
   .on("data", (row) => rows.push(row))
   .on("end", async () => {
-    let attemptCount = 0; // counts success + failure
+    let attemptCount = 0;
 
     if (rows.length === 0) {
       console.log("No rows found");
@@ -93,13 +92,20 @@ fs.createReadStream(FILE)
       if (attemptCount >= BATCH_SIZE) break;
 
       const email = row["Email"]?.trim();
-      const company = row["Company / Org"]?.trim() || "Hiring Team";
+      const name = row["Name"]?.trim() || "Hiring Team";
+      const personalization = row["Personalization"]?.trim();
 
       if (!email) continue;
 
       // Skip already processed rows
       if (row.Status?.trim() === "SENT" || row.Status?.trim() === "FAILED")
         continue;
+
+      // Skip rows without personalization written yet
+      if (!personalization) {
+        console.log(`Skipping ${email} — no personalization written`);
+        continue;
+      }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         row.Status = "FAILED";
@@ -111,11 +117,10 @@ fs.createReadStream(FILE)
       }
 
       try {
-        await sendMail(email, company);
-
+        await sendMail(email, name, personalization);
         row.Status = "SENT";
         row.Reason = "";
-        console.log("Sent →", email);
+        console.log("Sent →", email, `(${name})`);
       } catch (err) {
         row.Status = "FAILED";
         row.Reason = err.message;
@@ -124,11 +129,10 @@ fs.createReadStream(FILE)
       }
 
       row["Last Sent"] = new Date().toISOString();
-
       attemptCount++;
       saveProgress(rows);
 
-      const jitter = Math.floor(Math.random() * 60000); // up to +60s --for randomness
+      const jitter = Math.floor(Math.random() * 60000);
       await wait(DELAY_MS + jitter);
     }
 
