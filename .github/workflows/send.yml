@@ -1,36 +1,50 @@
 name: Send Emails
 
 on:
-  schedule:
-    - cron: "0 */6 * * *"   # every 6 hours
-  workflow_dispatch:        # manual run button
+  workflow_dispatch: # Run manually from Actions tab
+  # schedule:          # OPTIONAL — enable for automatic runs
+  #   - cron: "0 4 * * *"   # Runs daily at 4 AM UTC
+
+permissions:
+  contents: write # REQUIRED to push updated CSV
 
 jobs:
   send:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout repo
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # Setup Node.js
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
+      # Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # Run email script
       - name: Run email script
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
         run: node sendEmails.js
 
+      # Commit updated CSV back to repo
       - name: Commit updated CSV
         run: |
           git config --global user.name "automation-bot"
-          git config --global user.email "bot@github.com"
-          git add emails_updated.csv || true
-          git commit -m "Update email status" || true
-          git push
+          git config --global user.email "bot@users.noreply.github.com"
+
+          git add emails.csv || true
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update email status"
+            git push
+          fi
