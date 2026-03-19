@@ -22,7 +22,7 @@ if (!fs.existsSync(RESUME_PATH)) {
 }
 
 const DELAY_MS = 420 * 1000; // 7 minutes between emails
-const BATCH_SIZE = 20; // 20 per run × 2 runs = 40/day
+const BATCH_SIZE = 10; // 10 per run × 2 runs = 20/day
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

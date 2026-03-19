@@ -1,0 +1,57 @@
+name: Follow-up Emails
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_reason:
+        description: "Reason for manual run (optional)"
+        required: false
+        default: "Manual trigger"
+
+  schedule:
+    # 12:00 PM IST = 6:30 AM UTC — Mon to Fri
+    # cron day-of-week (1-5) already excludes weekends
+    - cron: "30 6 * * 1-5"
+
+permissions:
+  contents: write
+
+jobs:
+  followup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run follow-up script
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        run: node followUp.js
+
+      - name: Commit updated CSV
+        run: |
+          git config --global user.name "automation-bot"
+          git config --global user.email "bot@users.noreply.github.com"
+
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git add emails.csv
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            # Pull latest before push to avoid conflicts with sendEmails workflow
+            git pull --rebase origin main
+            git commit -m "chore: update follow-up status [$(date '+%Y-%m-%d %H:%M UTC')]"
+            git push
+          fi
