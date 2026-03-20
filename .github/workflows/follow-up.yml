@@ -45,13 +45,14 @@ jobs:
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
+          # Pull latest first before staging to avoid rebase conflicts
+          git pull --rebase origin main
+
           git add emails.csv
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            # Pull latest before push to avoid conflicts with sendEmails workflow
-            git pull --rebase origin main
             git commit -m "chore: update follow-up status [$(date '+%Y-%m-%d %H:%M UTC')]"
             git push
           fi
