@@ -11,9 +11,9 @@ on:
   schedule:
     # IST = UTC+5:30
     # Morning batch:   9:30 AM IST = 4:00 AM UTC → Mon–Fri
-    # Afternoon batch: 2:30 PM IST = 9:00 AM UTC → Mon–Thu only (skip Friday afternoon)
-    - cron: "0 4 * * 1-5" # Morning:   Mon–Fri  at 9:30 AM IST
-    - cron: "0 9 * * 1-4" # Afternoon: Mon–Thu  at 2:30 PM IST
+    # Afternoon batch: 2:30 PM IST = 9:00 AM UTC → Mon–Thu only
+    - cron: "0 4 * * 1-5" # Morning:   Mon–Fri
+    - cron: "0 9 * * 1-4" # Afternoon: Mon–Thu
 
 permissions:
   contents: write
@@ -23,23 +23,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check if should skip (Fri afternoon, Sat, Sun)
+      - name: Check if should skip (Fri afternoon)
         id: day_check
         run: |
-          DAY=$(date +%u)    # 1=Mon ... 5=Fri, 6=Sat, 7=Sun
-          HOUR=$(date +%H)   # UTC hour
+          DAY=$(date +%u)
+          HOUR=$(date +%H)
           echo "Day: $DAY, Hour (UTC): $HOUR"
 
           SKIP="false"
-
-          # Skip Saturday and Sunday entirely
-          if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
-            echo "Weekend — skipping."
-            SKIP="true"
-          fi
-
-          # Skip Friday afternoon (UTC 09:00+ = IST 2:30 PM+)
-          # Morning run on Friday (UTC 04:00) is allowed
           if [ "$DAY" -eq 5 ] && [ "$HOUR" -ge 9 ]; then
             echo "Friday afternoon — skipping."
             SKIP="true"
@@ -75,6 +66,8 @@ jobs:
           git config --global user.email "bot@users.noreply.github.com"
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git pull --rebase origin main
 
           git add emails.csv
 
