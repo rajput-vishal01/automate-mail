@@ -9,8 +9,12 @@ on:
         default: "Manual trigger"
 
   schedule:
-    # 12:00 PM IST = 6:30 AM UTC — Mon to Fri
-    - cron: "30 6 * * 1-5"
+    - cron: "30 6 * * 1-5"   # 12:00 PM IST
+
+# Same concurrency group — queues behind send if it's running
+concurrency:
+  group: csv-access
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -53,7 +57,6 @@ jobs:
 
           git commit -m "chore: update follow-up status [$(date '+%Y-%m-%d %H:%M UTC')]"
 
-          # Fetch latest, then merge favouring our local CSV changes
           git fetch origin main
           git merge -X ours origin/main --no-edit
 
