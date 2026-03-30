@@ -67,13 +67,17 @@ jobs:
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-          git pull --rebase origin main
-
           git add emails.csv
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
-          else
-            git commit -m "chore: update email status [$(date '+%Y-%m-%d %H:%M UTC')]"
-            git push
+            exit 0
           fi
+
+          git commit -m "chore: update email status [$(date '+%Y-%m-%d %H:%M UTC')]"
+
+          # Fetch latest, then merge favouring our local CSV changes
+          git fetch origin main
+          git merge -X ours origin/main --no-edit
+
+          git push

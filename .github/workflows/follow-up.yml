@@ -10,7 +10,6 @@ on:
 
   schedule:
     # 12:00 PM IST = 6:30 AM UTC — Mon to Fri
-    # cron day-of-week (1-5) already excludes weekends
     - cron: "30 6 * * 1-5"
 
 permissions:
@@ -45,14 +44,17 @@ jobs:
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-          # Pull latest first before staging to avoid rebase conflicts
-          git pull --rebase origin main
-
           git add emails.csv
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
-          else
-            git commit -m "chore: update follow-up status [$(date '+%Y-%m-%d %H:%M UTC')]"
-            git push
+            exit 0
           fi
+
+          git commit -m "chore: update follow-up status [$(date '+%Y-%m-%d %H:%M UTC')]"
+
+          # Fetch latest, then merge favouring our local CSV changes
+          git fetch origin main
+          git merge -X ours origin/main --no-edit
+
+          git push
